@@ -11,6 +11,7 @@
 
     <modules>
         <module>codegen-core</module>
+        <module>annotation-processor</module>
     </modules>
 
     <properties>
