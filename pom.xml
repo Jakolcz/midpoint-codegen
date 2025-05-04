@@ -19,10 +19,17 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jupiter.version>5.12.2</jupiter.version>
+        <connid.version>1.5.0.0</connid.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>net.tirasa.connid</groupId>
+                <artifactId>connector-framework</artifactId>
+                <version>${connid.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
