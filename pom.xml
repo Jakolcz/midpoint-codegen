@@ -8,8 +8,9 @@
     <artifactId>midpoint-codegen</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
+
     <modules>
-        <module>codegen-annotations</module>
+        <module>codegen-core</module>
     </modules>
 
     <properties>
