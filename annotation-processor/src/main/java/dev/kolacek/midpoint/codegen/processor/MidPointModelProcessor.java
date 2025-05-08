@@ -37,7 +37,7 @@ public class MidPointModelProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        ConnectorObjectBuilderGenerator generator = new ConnectorObjectBuilderGenerator(elementUtils, filer);
+        ConnectorObjectBuilderGenerator generator = new ConnectorObjectBuilderGenerator(elementUtils, messager, typeUtils, filer);
         for (Element element : roundEnv.getElementsAnnotatedWith(ConnectorObject.class)) {
             if (element.getKind() != ElementKind.CLASS) {
                 error(element, "@ConnectorObject can only be applied to classes.");
