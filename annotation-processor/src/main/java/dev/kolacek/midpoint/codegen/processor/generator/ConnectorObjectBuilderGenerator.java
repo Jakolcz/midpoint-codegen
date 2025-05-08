@@ -7,6 +7,7 @@ import dev.kolacek.midpoint.codegen.annotation.IgnoreAttribute;
 import org.identityconnectors.common.security.GuardedByteArray;
 import org.identityconnectors.common.security.GuardedString;
 
+import javax.annotation.Nullable;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.Messager;
 import javax.lang.model.element.*;
@@ -17,15 +18,13 @@ import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ConnectorObjectBuilderGenerator {
-
-    private final Elements elementUtils;
-    private final Filer filer;
-    private final Messager messager;
-    private final Types typeUtils;
 
     /**
      * Set of supported basic classes for connector attributes.
@@ -35,6 +34,15 @@ public class ConnectorObjectBuilderGenerator {
             Boolean.class, byte.class, Byte.class, byte[].class, BigDecimal.class, BigInteger.class, GuardedByteArray.class,
             GuardedString.class/*, Map.class, ZonedDateTime.class, Enum.class*/);
     private static final Set<String> SUPPORTED_BASIC_CLASSES_FQN = SUPPORTED_BASIC_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
+
+    private static final String PARAM_CONNECTOR_BUILDER = "data";
+    private static final String BUILDER_NAME = "builder";
+
+    private final Elements elementUtils;
+    private final Filer filer;
+    private final Messager messager;
+    private final Types typeUtils;
+
 
     public ConnectorObjectBuilderGenerator(Elements elementUtils, Messager messager, Types typeUtils, Filer filer) {
         this.elementUtils = elementUtils;
@@ -52,19 +60,42 @@ public class ConnectorObjectBuilderGenerator {
         System.out.println("Generating class: " + generatedClassName + " in package: " + packageName);
 
         ClassName generatedClass = ClassName.get(packageName, generatedClassName);
+        ClassName definingClass = ClassName.get(classElement);
 
         // Import necessary classes from MidPoint/ConnId
         ClassName objectClassInfoBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "ObjectClassInfoBuilder");
-        ClassName objectClassInfoClass = ClassName.get("org.identityconnectors.framework.common.objects", "ObjectClassInfo");
         ClassName attributeInfoBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "AttributeInfoBuilder");
+        ClassName connectorObjectBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "ConnectorObjectBuilder");
 
         // Create the builder class
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(generatedClass)
                 .addModifiers(Modifier.PUBLIC);
 
         CodeBlock.Builder objectClassInfoBuilderMethod = CodeBlock.builder()
-                .addStatement("$T builder = new $T()", objectClassInfoBuilderClass, objectClassInfoBuilderClass)
-                .addStatement("builder.setType($S)", annotation.objectClassType());
+                .addStatement("$T $L = new $T()", objectClassInfoBuilderClass, BUILDER_NAME, objectClassInfoBuilderClass)
+                .addStatement("$L.setType($S)", BUILDER_NAME, annotation.objectClassType());
+
+        CodeBlock.Builder connectorObjectBuilderMethod = CodeBlock.builder()
+                .addStatement("$T $L = new $T()", connectorObjectBuilderClass, BUILDER_NAME, connectorObjectBuilderClass);
+        // TODO Set object class type
+
+        Map<String, ExecutableElement> getters = new HashMap<>();
+        for (Element element : classElement.getEnclosedElements()) {
+            if (element.getKind() != ElementKind.FIELD) {
+                continue;
+            }
+
+            if (element.getAnnotation(IgnoreAttribute.class) != null) {
+                continue;
+            }
+
+            VariableElement fieldElement = (VariableElement) element;
+            ExecutableElement getter = findGetter(fieldElement, classElement);
+            if (getter != null) {
+                getters.put(fieldElement.getSimpleName().toString(), getter);
+            }
+        }
+
 
         for (Element element : classElement.getEnclosedElements()) {
             if (element.getKind() != ElementKind.FIELD) {
@@ -92,16 +123,37 @@ public class ConnectorObjectBuilderGenerator {
                     fieldInfo.required(),
                     fieldInfo.type(),
                     fieldInfo.multiValued());
+
+            ExecutableElement getter = getters.get(fieldElement.getSimpleName().toString());
+            if (getter == null) {
+                warn(fieldElement, "No getter found for field %s", fieldElement.getSimpleName());
+                continue;
+            }
+
+            connectorObjectBuilderMethod.addStatement("$L.addAttribute($S, $L.$L())",
+                    BUILDER_NAME,
+                    fieldInfo.name(),
+                    PARAM_CONNECTOR_BUILDER,
+                    getter.getSimpleName());
         }
 
         MethodSpec objectClassInfoMethod = MethodSpec.methodBuilder("objectClassInfoBuilder")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .addCode(objectClassInfoBuilderMethod.build())
-                .addStatement("return builder")
+                .addStatement("return $L", BUILDER_NAME)
                 .returns(objectClassInfoBuilderClass)
                 .build();
 
+        MethodSpec connectorObjectMethod = MethodSpec.methodBuilder("connectorObjectBuilder")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addParameter(definingClass, PARAM_CONNECTOR_BUILDER)
+                .addCode(connectorObjectBuilderMethod.build())
+                .addStatement("return $L", BUILDER_NAME)
+                .returns(connectorObjectBuilderClass)
+                .build();
+
         classBuilder.addMethod(objectClassInfoMethod);
+        classBuilder.addMethod(connectorObjectMethod);
 
         TypeSpec generatedType = classBuilder.build();
         // Create a JavaFile with the package and TypeSpec
@@ -111,6 +163,38 @@ public class ConnectorObjectBuilderGenerator {
                 .build();
 
         System.out.println("Output class: " + javaFile);
+    }
+
+    /**
+     * Finds the getter method for a given field following Java Bean convention.
+     * Returns null if no getter is found.
+     */
+    @Nullable
+    private ExecutableElement findGetter(VariableElement fieldElement, TypeElement classElement) {
+        String fieldName = fieldElement.getSimpleName().toString();
+        String capitalizedFieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+
+        // Check if the field is boolean or not, booleans use "is" prefix
+        boolean isBoolean = fieldElement.asType().getKind() == TypeKind.BOOLEAN;
+        String getterPrefix = isBoolean ? "is" : "get";
+        String expectedGetterName = getterPrefix + capitalizedFieldName;
+
+        // Look for the getter among all methods
+        for (Element enclosedElement : classElement.getEnclosedElements()) {
+            if (enclosedElement.getKind() != ElementKind.METHOD) {
+                continue;
+            }
+
+            ExecutableElement methodElement = (ExecutableElement) enclosedElement;
+
+            // Check if method name matches and it has no parameters
+            if (methodElement.getSimpleName().toString().equals(expectedGetterName) &&
+                    methodElement.getParameters().isEmpty()) {
+                return methodElement;
+            }
+        }
+
+        return null; // No getter found
     }
 
     private boolean isSupportedType(TypeMirror typeMirror) {
