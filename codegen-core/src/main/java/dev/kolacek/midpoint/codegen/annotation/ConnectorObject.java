@@ -5,6 +5,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Annotation that indicates that this class should be processed as a connector object and have ObjectClassInfoBuilder and ConnectorObjectInfoBuilder generated.
+ * <p>
+ * All fields of the class will be processed as connector attributes, unless they are annotated with {@link IgnoreAttribute} annotation.
+ * </p>
+ *
+ * @see ConnectorAttribute
+ * @see IgnoreAttribute
+ */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 public @interface ConnectorObject {
