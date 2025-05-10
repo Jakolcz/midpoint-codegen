@@ -33,7 +33,7 @@ import java.util.Set;
 
 @AutoService(Processor.class)
 @SupportedAnnotationTypes({
-        "dev.kolacek.midpoint.codegen.annotation.ConnectorObject"
+        "dev.kolacek.midpoint.codegen.annotation.ConnectorModel",
 })
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class MidPointModelProcessor extends AbstractProcessor {
