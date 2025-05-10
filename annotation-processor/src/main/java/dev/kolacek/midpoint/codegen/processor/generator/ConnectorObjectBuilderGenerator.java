@@ -76,9 +76,14 @@ public class ConnectorObjectBuilderGenerator {
 
     public void generate(TypeElement classElement) throws IOException {
         String className = classElement.getSimpleName().toString();
-        String packageName = elementUtils.getPackageOf(classElement).getQualifiedName().toString();
-        String generatedClassName = className + "Builders";
         ConnectorModel annotation = classElement.getAnnotation(ConnectorModel.class);
+        String generatedClassName = className + annotation.suffix();
+        String packageName;
+        if (annotation.packageName().isBlank()) {
+            packageName = elementUtils.getPackageOf(classElement).getQualifiedName().toString();
+        } else {
+            packageName = annotation.packageName();
+        }
 
         System.out.println("Generating class: " + generatedClassName + " in package: " + packageName);
 
@@ -274,6 +279,6 @@ public class ConnectorObjectBuilderGenerator {
     }
 
     public record FieldInfo(String name, TypeName type, boolean required, boolean multiValued,
-                             @Nullable String enumToString) {
+                            @Nullable String enumToString) {
     }
 }

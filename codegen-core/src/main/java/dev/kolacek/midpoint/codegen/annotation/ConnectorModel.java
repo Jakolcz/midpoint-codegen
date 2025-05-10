@@ -43,4 +43,21 @@ public @interface ConnectorModel {
      * @see org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder#setType(String)
      */
     String objectClassType() default "__ACCOUNT__";
+
+    /**
+     * The suffix that will be used for the generated class name, default is {@code Builders}.
+     * <p>
+     * If the class is named {@code MyClass}, the generated class will be named {@code MyClassBuilders}.
+     * </p>
+     *
+     * @return The suffix that will be used for the generated class name.
+     */
+    String suffix() default "Builders";
+
+    /**
+     * The package name that will be used for the generated class, default is the package name of the class.
+     *
+     * @return The package name that will be used for the generated class.
+     */
+    String packageName() default "";
 }

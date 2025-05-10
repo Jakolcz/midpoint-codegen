@@ -41,4 +41,6 @@ public @interface ConnectorAttribute {
     boolean required() default DEFAULT_REQUIRED;
 
     boolean multivalued() default DEFAULT_MULTIVALUED;
+
+    // TODO add support for custom getter name
 }
