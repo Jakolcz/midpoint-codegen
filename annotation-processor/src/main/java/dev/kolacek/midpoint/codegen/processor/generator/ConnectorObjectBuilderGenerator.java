@@ -19,6 +19,7 @@ package dev.kolacek.midpoint.codegen.processor.generator;
 import com.palantir.javapoet.*;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
+import dev.kolacek.midpoint.codegen.annotation.EnumAttribute;
 import dev.kolacek.midpoint.codegen.annotation.IgnoreAttribute;
 import org.identityconnectors.common.security.GuardedByteArray;
 import org.identityconnectors.common.security.GuardedString;
@@ -48,7 +49,7 @@ public class ConnectorObjectBuilderGenerator {
     private static final Set<Class<?>> SUPPORTED_BASIC_CLASSES = Set.of(String.class, long.class, Long.class, char.class,
             Character.class, double.class, Double.class, float.class, Float.class, int.class, Integer.class, boolean.class,
             Boolean.class, byte.class, Byte.class, byte[].class, BigDecimal.class, BigInteger.class, GuardedByteArray.class,
-            GuardedString.class/*, Map.class, ZonedDateTime.class, Enum.class*/);
+            GuardedString.class, /*Map.class, ZonedDateTime.class,*/ Enum.class);
     private static final Set<String> SUPPORTED_BASIC_CLASSES_FQN = SUPPORTED_BASIC_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
 
     private static final String PARAM_CONNECTOR_BUILDER = "data";
@@ -146,11 +147,11 @@ public class ConnectorObjectBuilderGenerator {
                 continue;
             }
 
-            connectorObjectBuilderMethod.addStatement("$L.addAttribute($S, $L.$L())",
-                    BUILDER_NAME,
-                    fieldInfo.name(),
-                    PARAM_CONNECTOR_BUILDER,
-                    getter.getSimpleName());
+            if (fieldInfo.enumToString() == null) {
+                connectorObjectBuilderMethod.add(addAttributeBlock(fieldInfo, getter));
+            } else {
+                connectorObjectBuilderMethod.add(addEnumAttributeBlock(fieldInfo, getter));
+            }
         }
 
         objectClassInfoBuilderMethod.addStatement("return $L", BUILDER_NAME);
@@ -230,9 +231,9 @@ public class ConnectorObjectBuilderGenerator {
         TypeElement typeElement = (TypeElement) typeUtils.asElement(typeMirror);
         ElementKind elementKind = typeElement.getKind();
 
-        // ENUMs are not supported for now
+        // ENUMs are supported now
         if (elementKind == ElementKind.ENUM) {
-            return false;
+            return true;
         }
 
         if (elementKind == ElementKind.CLASS) {
@@ -244,9 +245,47 @@ public class ConnectorObjectBuilderGenerator {
         return false;
     }
 
+    private CodeBlock addEnumAttributeBlock(FieldInfo fieldInfo, ExecutableElement getter) {
+        return CodeBlock.builder()
+                .beginControlFlow("if ($L.$L() != null)", PARAM_CONNECTOR_BUILDER, getter.getSimpleName())
+                .addStatement("$L.addAttribute($S, $L.$L().$L())",
+                        BUILDER_NAME,
+                        fieldInfo.name(),
+                        PARAM_CONNECTOR_BUILDER,
+                        getter.getSimpleName(),
+                        fieldInfo.enumToString())
+                .endControlFlow()
+                .build();
+    }
+
+    private CodeBlock addAttributeBlock(FieldInfo fieldInfo, ExecutableElement getter) {
+        return CodeBlock.builder()
+                .addStatement("$L.addAttribute($S, $L.$L())",
+                        BUILDER_NAME,
+                        fieldInfo.name(),
+                        PARAM_CONNECTOR_BUILDER,
+                        getter.getSimpleName())
+                .build();
+    }
+
     private FieldInfo toFieldInfo(VariableElement fieldElement) {
         TypeMirror fieldType = fieldElement.asType();
         ConnectorAttribute connectorAttribute = fieldElement.getAnnotation(ConnectorAttribute.class);
+        TypeName className;
+        String enumToString = null;
+
+        if (fieldType.getKind().isPrimitive()) {
+            className = ClassName.get(fieldType);
+        } else {
+            TypeElement typeElement = (TypeElement) typeUtils.asElement(fieldType);
+            ElementKind elementKind = typeElement.getKind();
+            if (elementKind == ElementKind.ENUM) {
+                className = ClassName.get(String.class);
+                enumToString = getEnumToString(fieldElement);
+            } else {
+                className = ClassName.get(fieldType);
+            }
+        }
 
         boolean isRequired;
         boolean isMultivalued;
@@ -262,14 +301,22 @@ public class ConnectorObjectBuilderGenerator {
             fieldName = fieldElement.getSimpleName().toString();
         }
 
-        return new FieldInfo(fieldName, ClassName.get(fieldType), isRequired, isMultivalued);
+        return new FieldInfo(fieldName, className, isRequired, isMultivalued, enumToString);
+    }
+
+    private String getEnumToString(VariableElement fieldElement) {
+        EnumAttribute enumAttribute = fieldElement.getAnnotation(EnumAttribute.class);
+        if (enumAttribute == null) {
+            return EnumAttribute.DEFAULT_TO_STRING_METHOD;
+        }
+        return enumAttribute.toStringMethod();
     }
 
     private void warn(Element e, String msg, Object... args) {
         messager.printMessage(Diagnostic.Kind.WARNING, String.format(msg, args), e);
     }
 
-    private record FieldInfo(String name, TypeName type, boolean required, boolean multiValued) {
-
+    private record FieldInfo(String name, TypeName type, boolean required, boolean multiValued,
+                             @Nullable String enumToString) {
     }
 }

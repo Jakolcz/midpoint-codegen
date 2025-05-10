@@ -53,7 +53,7 @@ public class SampleClass {
         this.enumValue = enumValue;
     }
 
-    private enum SampleEnum {
+    public enum SampleEnum {
         VALUE1,
         VALUE2
     }
