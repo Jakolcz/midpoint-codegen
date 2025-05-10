@@ -21,6 +21,8 @@ import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
 import dev.kolacek.midpoint.codegen.annotation.EnumAttribute;
 import dev.kolacek.midpoint.codegen.annotation.IgnoreAttribute;
+import dev.kolacek.midpoint.codegen.processor.generator.util.AnnotationUtil;
+import dev.kolacek.midpoint.codegen.processor.generator.util.PoetUtil;
 import org.identityconnectors.common.security.GuardedByteArray;
 import org.identityconnectors.common.security.GuardedString;
 
@@ -37,6 +39,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,10 +53,13 @@ public class ConnectorObjectBuilderGenerator {
             Character.class, double.class, Double.class, float.class, Float.class, int.class, Integer.class, boolean.class,
             Boolean.class, byte.class, Byte.class, byte[].class, BigDecimal.class, BigInteger.class, GuardedByteArray.class,
             GuardedString.class, /*Map.class, ZonedDateTime.class,*/ Enum.class);
-    private static final Set<String> SUPPORTED_BASIC_CLASSES_FQN = SUPPORTED_BASIC_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
+    private static final Set<Class<?>> SUPPORTED_COLLECTION_CLASSES = Set.of(List.class, Set.class);
 
-    private static final String PARAM_CONNECTOR_BUILDER = "data";
-    private static final String BUILDER_NAME = "builder";
+    private static final Set<String> SUPPORTED_BASIC_CLASSES_FQN = SUPPORTED_BASIC_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
+    private static final Set<String> SUPPORTED_COLLECTION_CLASSES_FQN = SUPPORTED_COLLECTION_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
+
+    public static final String PARAM_CONNECTOR_BUILDER = "data";
+    public static final String BUILDER_NAME = "builder";
 
     private final Elements elementUtils;
     private final Filer filer;
@@ -83,6 +89,7 @@ public class ConnectorObjectBuilderGenerator {
         ClassName objectClassInfoBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "ObjectClassInfoBuilder");
         ClassName attributeInfoBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "AttributeInfoBuilder");
         ClassName connectorObjectBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "ConnectorObjectBuilder");
+        ClassName objectClassClass = ClassName.get("org.identityconnectors.framework.common.objects", "ObjectClass");
 
         // Create the builder class
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(generatedClass)
@@ -93,8 +100,9 @@ public class ConnectorObjectBuilderGenerator {
                 .addStatement("$L.setType($S)", BUILDER_NAME, annotation.objectClassType());
 
         CodeBlock.Builder connectorObjectBuilderMethod = CodeBlock.builder()
-                .addStatement("$T $L = new $T()", connectorObjectBuilderClass, BUILDER_NAME, connectorObjectBuilderClass);
-        // TODO Set object class type
+                .addStatement("$T $L = new $T()", connectorObjectBuilderClass, BUILDER_NAME, connectorObjectBuilderClass)
+                .addStatement("$L.setObjectClass(new $T($S))", BUILDER_NAME, objectClassClass, annotation.objectClassType());
+        // TODO Add handling for the default ACCOUNT, GROUP, ALL object classes
 
         Map<String, ExecutableElement> getters = new HashMap<>();
         for (Element element : classElement.getEnclosedElements()) {
@@ -141,22 +149,23 @@ public class ConnectorObjectBuilderGenerator {
 
             ExecutableElement getter = getters.get(fieldElement.getSimpleName().toString());
             if (getter == null) {
+                // TODO add the option to fail, warn or ignore
                 warn(fieldElement, "No getter found for field %s", fieldElement.getSimpleName());
                 continue;
             }
 
             if (fieldInfo.enumToString() == null) {
-                connectorObjectBuilderMethod.add(addAttributeBlock(fieldInfo, getter));
+                connectorObjectBuilderMethod.add(PoetUtil.addAttributeBlock(fieldInfo, getter));
             } else {
-                connectorObjectBuilderMethod.add(addEnumAttributeBlock(fieldInfo, getter));
+                connectorObjectBuilderMethod.add(PoetUtil.addEnumAttributeBlock(fieldInfo, getter));
             }
         }
 
         objectClassInfoBuilderMethod.addStatement("return $L", BUILDER_NAME);
         connectorObjectBuilderMethod.addStatement("return $L", BUILDER_NAME);
 
-        MethodSpec objectClassInfoMethod = createMethod("objectClassInfoBuilder", objectClassInfoBuilderClass, objectClassInfoBuilderMethod.build());
-        MethodSpec connectorObjectMethod = createMethod("connectorObjectBuilder", connectorObjectBuilderClass, connectorObjectBuilderMethod.build(), ParameterSpec.builder(definingClass, PARAM_CONNECTOR_BUILDER).build());
+        MethodSpec objectClassInfoMethod = PoetUtil.createMethod("objectClassInfoBuilder", objectClassInfoBuilderClass, objectClassInfoBuilderMethod.build());
+        MethodSpec connectorObjectMethod = PoetUtil.createMethod("connectorObjectBuilder", connectorObjectBuilderClass, connectorObjectBuilderMethod.build(), ParameterSpec.builder(definingClass, PARAM_CONNECTOR_BUILDER).build());
 
         classBuilder.addMethod(objectClassInfoMethod);
         classBuilder.addMethod(connectorObjectMethod);
@@ -170,21 +179,6 @@ public class ConnectorObjectBuilderGenerator {
 
         System.out.println("Output class: " + javaFile);
         javaFile.writeTo(filer);
-    }
-
-    private MethodSpec createMethod(String name, ClassName returnType, CodeBlock codeBlock) {
-        return createMethod(name, returnType, codeBlock, null);
-    }
-
-    private MethodSpec createMethod(String name, ClassName returnType, CodeBlock codeBlock, ParameterSpec parameter) {
-        MethodSpec.Builder builder = MethodSpec.methodBuilder(name)
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .returns(returnType)
-                .addCode(codeBlock);
-        if (parameter != null) {
-            builder.addParameter(parameter);
-        }
-        return builder.build();
     }
 
     /**
@@ -234,36 +228,9 @@ public class ConnectorObjectBuilderGenerator {
             return true;
         }
 
-        if (elementKind == ElementKind.CLASS) {
-            String className = typeElement.getQualifiedName().toString();
+        String className = typeElement.getQualifiedName().toString();
 
-            return SUPPORTED_BASIC_CLASSES_FQN.contains(className);
-        }
-
-        return false;
-    }
-
-    private CodeBlock addEnumAttributeBlock(FieldInfo fieldInfo, ExecutableElement getter) {
-        return CodeBlock.builder()
-                .beginControlFlow("if ($L.$L() != null)", PARAM_CONNECTOR_BUILDER, getter.getSimpleName())
-                .addStatement("$L.addAttribute($S, $L.$L().$L())",
-                        BUILDER_NAME,
-                        fieldInfo.name(),
-                        PARAM_CONNECTOR_BUILDER,
-                        getter.getSimpleName(),
-                        fieldInfo.enumToString())
-                .endControlFlow()
-                .build();
-    }
-
-    private CodeBlock addAttributeBlock(FieldInfo fieldInfo, ExecutableElement getter) {
-        return CodeBlock.builder()
-                .addStatement("$L.addAttribute($S, $L.$L())",
-                        BUILDER_NAME,
-                        fieldInfo.name(),
-                        PARAM_CONNECTOR_BUILDER,
-                        getter.getSimpleName())
-                .build();
+        return SUPPORTED_BASIC_CLASSES_FQN.contains(className) || SUPPORTED_COLLECTION_CLASSES_FQN.contains(className);
     }
 
     private FieldInfo toFieldInfo(VariableElement fieldElement) {
@@ -279,7 +246,7 @@ public class ConnectorObjectBuilderGenerator {
             ElementKind elementKind = typeElement.getKind();
             if (elementKind == ElementKind.ENUM) {
                 className = ClassName.get(String.class);
-                enumToString = getEnumToString(fieldElement);
+                enumToString = AnnotationUtil.getEnumToString(fieldElement.getAnnotation(EnumAttribute.class));
             } else {
                 className = ClassName.get(fieldType);
             }
@@ -302,19 +269,11 @@ public class ConnectorObjectBuilderGenerator {
         return new FieldInfo(fieldName, className, isRequired, isMultivalued, enumToString);
     }
 
-    private String getEnumToString(VariableElement fieldElement) {
-        EnumAttribute enumAttribute = fieldElement.getAnnotation(EnumAttribute.class);
-        if (enumAttribute == null) {
-            return EnumAttribute.DEFAULT_TO_STRING_METHOD;
-        }
-        return enumAttribute.toStringMethod();
-    }
-
     private void warn(Element e, String msg, Object... args) {
         messager.printMessage(Diagnostic.Kind.WARNING, String.format(msg, args), e);
     }
 
-    private record FieldInfo(String name, TypeName type, boolean required, boolean multiValued,
+    public record FieldInfo(String name, TypeName type, boolean required, boolean multiValued,
                              @Nullable String enumToString) {
     }
 }

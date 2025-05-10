@@ -3,6 +3,8 @@ package dev.kolacek.generator.test;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
 
+import java.util.List;
+
 @ConnectorModel
 public class SampleClass {
 
@@ -12,6 +14,8 @@ public class SampleClass {
     private int primitiveInt;
     private Integer integerValue;
     private SampleEnum enumValue;
+//    private Integer[] intArrayValue;
+//    private List<String> listValue;
 
     public String getName() {
         return name;
@@ -52,6 +56,22 @@ public class SampleClass {
     public void setEnumValue(SampleEnum enumValue) {
         this.enumValue = enumValue;
     }
+
+//    public Integer[] getIntArrayValue() {
+//        return intArrayValue;
+//    }
+//
+//    public void setIntArrayValue(Integer[] intArrayValue) {
+//        this.intArrayValue = intArrayValue;
+//    }
+
+//    public List<String> getListValue() {
+//        return listValue;
+//    }
+
+//    public void setListValue(List<String> listValue) {
+//        this.listValue = listValue;
+//    }
 
     public enum SampleEnum {
         VALUE1,
