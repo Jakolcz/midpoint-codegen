@@ -1,7 +1,7 @@
 package dev.kolacek.midpoint.codegen.processor;
 
 import com.google.auto.service.AutoService;
-import dev.kolacek.midpoint.codegen.annotation.ConnectorObject;
+import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
 import dev.kolacek.midpoint.codegen.processor.generator.ConnectorObjectBuilderGenerator;
 
 import javax.annotation.processing.*;
@@ -39,7 +39,7 @@ public class MidPointModelProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         ConnectorObjectBuilderGenerator generator = new ConnectorObjectBuilderGenerator(elementUtils, messager, typeUtils, filer);
-        for (Element element : roundEnv.getElementsAnnotatedWith(ConnectorObject.class)) {
+        for (Element element : roundEnv.getElementsAnnotatedWith(ConnectorModel.class)) {
             if (element.getKind() != ElementKind.CLASS) {
                 error(element, "@ConnectorObject can only be applied to classes.");
                 continue;

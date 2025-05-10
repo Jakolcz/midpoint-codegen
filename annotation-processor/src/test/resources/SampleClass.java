@@ -1,9 +1,9 @@
 package dev.kolacek.generator.test;
 
 import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
-import dev.kolacek.midpoint.codegen.annotation.ConnectorObject;
+import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
 
-@ConnectorObject
+@ConnectorModel
 public class SampleClass {
 
     @ConnectorAttribute(value = "annotationName", required = true)

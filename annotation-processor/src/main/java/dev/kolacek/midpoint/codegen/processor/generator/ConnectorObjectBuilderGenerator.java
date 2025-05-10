@@ -2,7 +2,7 @@ package dev.kolacek.midpoint.codegen.processor.generator;
 
 import com.palantir.javapoet.*;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
-import dev.kolacek.midpoint.codegen.annotation.ConnectorObject;
+import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
 import dev.kolacek.midpoint.codegen.annotation.IgnoreAttribute;
 import org.identityconnectors.common.security.GuardedByteArray;
 import org.identityconnectors.common.security.GuardedString;
@@ -55,7 +55,7 @@ public class ConnectorObjectBuilderGenerator {
         String className = classElement.getSimpleName().toString();
         String packageName = elementUtils.getPackageOf(classElement).getQualifiedName().toString();
         String generatedClassName = className + "Builders";
-        ConnectorObject annotation = classElement.getAnnotation(ConnectorObject.class);
+        ConnectorModel annotation = classElement.getAnnotation(ConnectorModel.class);
 
         System.out.println("Generating class: " + generatedClassName + " in package: " + packageName);
 
