@@ -20,7 +20,7 @@ as the project matures.
 
 ## Requirements
 
-- Java 11 or higher
+- Java 17 or higher
 - Maven 3.6 or higher
 
 ## Building
