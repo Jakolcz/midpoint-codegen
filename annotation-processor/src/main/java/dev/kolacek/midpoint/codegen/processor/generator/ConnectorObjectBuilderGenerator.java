@@ -153,20 +153,11 @@ public class ConnectorObjectBuilderGenerator {
                     getter.getSimpleName());
         }
 
-        MethodSpec objectClassInfoMethod = MethodSpec.methodBuilder("objectClassInfoBuilder")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addCode(objectClassInfoBuilderMethod.build())
-                .addStatement("return $L", BUILDER_NAME)
-                .returns(objectClassInfoBuilderClass)
-                .build();
+        objectClassInfoBuilderMethod.addStatement("return $L", BUILDER_NAME);
+        connectorObjectBuilderMethod.addStatement("return $L", BUILDER_NAME);
 
-        MethodSpec connectorObjectMethod = MethodSpec.methodBuilder("connectorObjectBuilder")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addParameter(definingClass, PARAM_CONNECTOR_BUILDER)
-                .addCode(connectorObjectBuilderMethod.build())
-                .addStatement("return $L", BUILDER_NAME)
-                .returns(connectorObjectBuilderClass)
-                .build();
+        MethodSpec objectClassInfoMethod = createMethod("objectClassInfoBuilder", objectClassInfoBuilderClass, objectClassInfoBuilderMethod.build());
+        MethodSpec connectorObjectMethod = createMethod("connectorObjectBuilder", connectorObjectBuilderClass, connectorObjectBuilderMethod.build(), ParameterSpec.builder(definingClass, PARAM_CONNECTOR_BUILDER).build());
 
         classBuilder.addMethod(objectClassInfoMethod);
         classBuilder.addMethod(connectorObjectMethod);
@@ -180,6 +171,21 @@ public class ConnectorObjectBuilderGenerator {
 
         System.out.println("Output class: " + javaFile);
         javaFile.writeTo(filer);
+    }
+
+    private MethodSpec createMethod(String name, ClassName returnType, CodeBlock codeBlock) {
+        return createMethod(name, returnType, codeBlock, null);
+    }
+
+    private MethodSpec createMethod(String name, ClassName returnType, CodeBlock codeBlock, ParameterSpec parameter) {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder(name)
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .returns(returnType)
+                .addCode(codeBlock);
+        if (parameter != null) {
+            builder.addParameter(parameter);
+        }
+        return builder.build();
     }
 
     /**
