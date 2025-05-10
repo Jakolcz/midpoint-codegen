@@ -132,8 +132,6 @@ public class ConnectorObjectBuilderGenerator {
 
             FieldInfo fieldInfo = toFieldInfo(fieldElement);
 
-            // TODO add Enum -> String mapping
-
             objectClassInfoBuilderMethod.addStatement("builder.addAttributeInfo(new $T().setName($S).setRequired($L).setType($T.class).setMultiValued($L).build())",
                     attributeInfoBuilderClass,
                     fieldInfo.name(),
