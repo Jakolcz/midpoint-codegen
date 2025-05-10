@@ -16,11 +16,11 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -51,7 +51,7 @@ public class ConnectorObjectBuilderGenerator {
         this.filer = filer;
     }
 
-    public void generate(TypeElement classElement) {
+    public void generate(TypeElement classElement) throws IOException {
         String className = classElement.getSimpleName().toString();
         String packageName = elementUtils.getPackageOf(classElement).getQualifiedName().toString();
         String generatedClassName = className + "Builders";
@@ -163,6 +163,7 @@ public class ConnectorObjectBuilderGenerator {
                 .build();
 
         System.out.println("Output class: " + javaFile);
+        javaFile.writeTo(filer);
     }
 
     /**

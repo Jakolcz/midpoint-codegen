@@ -12,6 +12,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
+import java.io.IOException;
 import java.util.Set;
 
 @AutoService(Processor.class)
@@ -45,9 +46,13 @@ public class MidPointModelProcessor extends AbstractProcessor {
             }
 
             TypeElement classElement = (TypeElement) element;
-            generator.generate(classElement);
+            try {
+                generator.generate(classElement);
+            } catch (IOException e) {
+                error(classElement, "Failed to generate code for %s: %s", classElement.getQualifiedName(), e.getMessage());
+            }
         }
-        return false;
+        return true;
     }
 
     private void error(Element e, String msg, Object... args) {
