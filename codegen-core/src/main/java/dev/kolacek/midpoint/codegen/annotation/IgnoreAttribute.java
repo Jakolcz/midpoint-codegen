@@ -25,6 +25,6 @@ import java.lang.annotation.Target;
  * Marks a field to be ignored during code generation.
  */
 @Retention(RetentionPolicy.CLASS)
-@Target(ElementType.TYPE)
+@Target(ElementType.FIELD)
 public @interface IgnoreAttribute {
 }
