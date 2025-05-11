@@ -30,11 +30,19 @@ public class ObjectClassMeta {
     private boolean fromConnId;
     private String objectClassName;
 
+    /**
+     * Constructs an ObjectClassMeta object with the specified object class name and the fromConnId flag set to false.
+     *
+     * @param objectClassName the name of the object class
+     * @see ObjectClassMeta#ACCOUNT
+     * @see ObjectClassMeta#GROUP
+     * @see ObjectClassMeta#ALL
+     */
     public ObjectClassMeta(String objectClassName) {
         this(false, objectClassName);
     }
 
-    public ObjectClassMeta(boolean fromConnId, String objectClassName) {
+    protected ObjectClassMeta(boolean fromConnId, String objectClassName) {
         this.fromConnId = fromConnId;
         this.objectClassName = objectClassName;
     }
@@ -55,6 +63,11 @@ public class ObjectClassMeta {
         this.objectClassName = objectClassName;
     }
 
+    /**
+     * Returns a CodeBlock to be used in the {@link org.identityconnectors.framework.common.objects.ConnectorObjectBuilder#setObjectClass(ObjectClass)} method.
+     *
+     * @return a CodeBlock to set the ObjectClass in the ConnectorObjectBuilder
+     */
     public CodeBlock getObjectClassCodeBlock() {
         CodeBlock.Builder builder = CodeBlock.builder();
 
