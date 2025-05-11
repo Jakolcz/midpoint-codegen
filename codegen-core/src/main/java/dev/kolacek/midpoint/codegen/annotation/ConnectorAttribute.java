@@ -42,5 +42,14 @@ public @interface ConnectorAttribute {
 
     boolean multivalued() default DEFAULT_MULTIVALUED;
 
-    // TODO add support for custom getter name
+    /**
+     * The name of the getter method for this attribute. If not specified, the default getter name will be used, following the JavaBean naming conventions.
+     * <p>
+     * For example, if the field is named {@code myField}, the default getter name will be {@code getMyField}.
+     * Primitive {@code boolean} fields will use {@code isMyField} as the getter name, boxed {@code Boolean} fields will use {@code getMyField}.
+     * </p>
+     *
+     * @return Name of the getter method.
+     */
+    String getterName() default "";
 }
