@@ -16,8 +16,6 @@
 
 package dev.kolacek.midpoint.codegen.processor.generator.meta;
 
-import org.identityconnectors.framework.common.objects.ObjectClass;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -28,18 +26,18 @@ public class ClassMeta {
     private String packageName;
     private String generatedClassName;
     private String generatedPackageName;
-    private ObjectClass objectClass;
+    private ObjectClassMeta objectClassMeta;
     private List<FieldMeta> fields;
 
     public ClassMeta() {
     }
 
-    public ClassMeta(String className, String packageName, String generatedClassName, String generatedPackageName, ObjectClass objectClass, List<FieldMeta> fields) {
+    public ClassMeta(String className, String packageName, String generatedClassName, String generatedPackageName, ObjectClassMeta objectClassMeta, List<FieldMeta> fields) {
         this.className = className;
         this.packageName = packageName;
         this.generatedClassName = generatedClassName;
         this.generatedPackageName = generatedPackageName;
-        this.objectClass = objectClass;
+        this.objectClassMeta = objectClassMeta;
         this.fields = fields;
     }
 
@@ -75,12 +73,12 @@ public class ClassMeta {
         this.generatedPackageName = generatedPackageName;
     }
 
-    public ObjectClass getObjectClass() {
-        return objectClass;
+    public ObjectClassMeta getObjectClassMeta() {
+        return objectClassMeta;
     }
 
-    public void setObjectClass(ObjectClass objectClass) {
-        this.objectClass = objectClass;
+    public void setObjectClassMeta(ObjectClassMeta objectClassMeta) {
+        this.objectClassMeta = objectClassMeta;
     }
 
     public List<FieldMeta> getFields() {
@@ -102,12 +100,12 @@ public class ClassMeta {
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof ClassMeta classMeta)) return false;
-        return Objects.equals(className, classMeta.className) && Objects.equals(packageName, classMeta.packageName) && Objects.equals(generatedClassName, classMeta.generatedClassName) && Objects.equals(generatedPackageName, classMeta.generatedPackageName) && Objects.equals(objectClass, classMeta.objectClass) && Objects.equals(fields, classMeta.fields);
+        return Objects.equals(className, classMeta.className) && Objects.equals(packageName, classMeta.packageName) && Objects.equals(generatedClassName, classMeta.generatedClassName) && Objects.equals(generatedPackageName, classMeta.generatedPackageName) && Objects.equals(objectClassMeta, classMeta.objectClassMeta) && Objects.equals(fields, classMeta.fields);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(className, packageName, generatedClassName, generatedPackageName, objectClass, fields);
+        return Objects.hash(className, packageName, generatedClassName, generatedPackageName, objectClassMeta, fields);
     }
 
     @Override
@@ -117,7 +115,7 @@ public class ClassMeta {
                 ", packageName='" + packageName + '\'' +
                 ", generatedClassName='" + generatedClassName + '\'' +
                 ", generatedPackageName='" + generatedPackageName + '\'' +
-                ", objectClass=" + objectClass +
+                ", objectClassMeta=" + objectClassMeta +
                 ", fields=" + fields +
                 '}';
     }
