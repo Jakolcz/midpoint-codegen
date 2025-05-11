@@ -40,7 +40,7 @@ public class MidPointModelProcessor extends AbstractProcessor {
     private Types typeUtils;
     private Elements elementUtils;
     private Filer filer;
-    private Messager messager;
+    private MessagingService messagingService;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -48,12 +48,11 @@ public class MidPointModelProcessor extends AbstractProcessor {
         this.typeUtils = processingEnv.getTypeUtils();
         this.elementUtils = processingEnv.getElementUtils();
         this.filer = processingEnv.getFiler();
-        this.messager = processingEnv.getMessager();
+        this.messagingService = new MessagingService(processingEnv.getMessager());
     }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        MessagingService messagingService = new MessagingService(messager);
         ConnectorObjectBuilderGenerator generator = new ConnectorObjectBuilderGenerator(elementUtils, messagingService, typeUtils, filer);
         for (Element element : roundEnv.getElementsAnnotatedWith(ConnectorModel.class)) {
             if (element.getKind() != ElementKind.CLASS) {
