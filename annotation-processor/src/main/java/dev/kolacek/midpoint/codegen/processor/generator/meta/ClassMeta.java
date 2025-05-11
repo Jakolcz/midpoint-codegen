@@ -18,6 +18,7 @@ package dev.kolacek.midpoint.codegen.processor.generator.meta;
 
 import org.identityconnectors.framework.common.objects.ObjectClass;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -84,6 +85,14 @@ public class ClassMeta {
 
     public List<FieldMeta> getFields() {
         return fields;
+    }
+
+    public ClassMeta addField(FieldMeta field) {
+        if (this.fields == null) {
+            this.fields = new LinkedList<>();
+        }
+        this.fields.add(field);
+        return this;
     }
 
     public void setFields(List<FieldMeta> fields) {
