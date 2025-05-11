@@ -16,6 +16,8 @@
 
 package dev.kolacek.midpoint.codegen.annotation;
 
+import dev.kolacek.midpoint.codegen.config.ReportingPolicy;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -60,4 +62,14 @@ public @interface ConnectorModel {
      * @return The package name that will be used for the generated class.
      */
     String packageName() default "";
+
+    /**
+     * The policy that will be used for missing getters, default is {@link ReportingPolicy#WARNING}.
+     * <p>
+     * If the policy is set to {@link ReportingPolicy#ERROR}, the code generation will fail if a getter is missing.
+     * </p>
+     *
+     * @return The policy that will be used for missing getters.
+     */
+    ReportingPolicy missingGetterPolicy() default ReportingPolicy.WARNING;
 }
