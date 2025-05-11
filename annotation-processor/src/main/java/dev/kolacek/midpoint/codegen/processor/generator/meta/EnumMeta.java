@@ -22,6 +22,10 @@ public class EnumMeta {
 
     private String toStringMethod;
 
+    public EnumMeta(String toStringMethod) {
+        this.toStringMethod = toStringMethod;
+    }
+
     public String getToStringMethod() {
         return toStringMethod;
     }
