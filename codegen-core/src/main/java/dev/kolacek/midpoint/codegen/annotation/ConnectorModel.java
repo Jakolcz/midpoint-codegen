@@ -16,6 +16,7 @@
 
 package dev.kolacek.midpoint.codegen.annotation;
 
+import dev.kolacek.midpoint.codegen.config.AnnotationDefaults;
 import dev.kolacek.midpoint.codegen.config.ReportingPolicy;
 
 import java.lang.annotation.ElementType;
@@ -44,7 +45,7 @@ public @interface ConnectorModel {
      * @see org.identityconnectors.framework.common.objects.ObjectClass
      * @see org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder#setType(String)
      */
-    String objectClassType() default "__ACCOUNT__";
+    String objectClassType() default AnnotationDefaults.ConnectorModel.OBJECT_CLASS_TYPE;
 
     /**
      * The suffix that will be used for the generated class name, default is {@code Builders}.
@@ -54,7 +55,7 @@ public @interface ConnectorModel {
      *
      * @return The suffix that will be used for the generated class name.
      */
-    String suffix() default "Builders";
+    String suffix() default AnnotationDefaults.ConnectorModel.SUFFIX;
 
     /**
      * The package name that will be used for the generated class, default is the package name of the class.
