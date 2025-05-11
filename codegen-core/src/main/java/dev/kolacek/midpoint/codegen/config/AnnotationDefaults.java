@@ -28,4 +28,11 @@ public final class AnnotationDefaults {
         public static final String OBJECT_CLASS_TYPE = "__ACCOUNT__";
         public static final String SUFFIX = "Builders";
     }
+
+    public static final class ConnectorAttribute {
+        private ConnectorAttribute() {
+        }
+
+        public static final boolean DEFAULT_REQUIRED = false;
+    }
 }

@@ -27,7 +27,6 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.util.Set;
 
@@ -54,10 +53,11 @@ public class MidPointModelProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        ConnectorObjectBuilderGenerator generator = new ConnectorObjectBuilderGenerator(elementUtils, messager, typeUtils, filer);
+        MessagingService messagingService = new MessagingService(messager);
+        ConnectorObjectBuilderGenerator generator = new ConnectorObjectBuilderGenerator(elementUtils, messagingService, typeUtils, filer);
         for (Element element : roundEnv.getElementsAnnotatedWith(ConnectorModel.class)) {
             if (element.getKind() != ElementKind.CLASS) {
-                error(element, "@ConnectorObject can only be applied to classes.");
+                messagingService.error(element, "@ConnectorObject can only be applied to classes.");
                 continue;
             }
 
@@ -65,21 +65,10 @@ public class MidPointModelProcessor extends AbstractProcessor {
             try {
                 generator.generate(classElement);
             } catch (IOException e) {
-                error(classElement, "Failed to generate code for %s: %s", classElement.getQualifiedName(), e.getMessage());
+                messagingService.error(classElement, "Failed to generate code for %s: %s", classElement.getQualifiedName(), e.getMessage());
             }
         }
         return true;
     }
 
-    private void error(Element e, String msg, Object... args) {
-        messager.printMessage(Diagnostic.Kind.ERROR, String.format(msg, args), e);
-    }
-
-    private void warn(Element e, String msg, Object... args) {
-        messager.printMessage(Diagnostic.Kind.WARNING, String.format(msg, args), e);
-    }
-
-    private void log(Element e, String msg, Object... args) {
-        messager.printMessage(Diagnostic.Kind.NOTE, String.format(msg, args), e);
-    }
 }

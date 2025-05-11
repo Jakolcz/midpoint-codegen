@@ -16,6 +16,8 @@
 
 package dev.kolacek.midpoint.codegen.annotation;
 
+import dev.kolacek.midpoint.codegen.config.AnnotationDefaults;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -28,7 +30,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ConnectorAttribute {
 
-    boolean DEFAULT_REQUIRED = false;
     boolean DEFAULT_MULTIVALUED = false;
 
     /**
@@ -38,8 +39,9 @@ public @interface ConnectorAttribute {
      */
     String value() default "";
 
-    boolean required() default DEFAULT_REQUIRED;
+    boolean required() default AnnotationDefaults.ConnectorAttribute.DEFAULT_REQUIRED;
 
+    @Deprecated(forRemoval = true)
     boolean multivalued() default DEFAULT_MULTIVALUED;
 
     /**

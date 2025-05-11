@@ -21,6 +21,8 @@ import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
 import dev.kolacek.midpoint.codegen.annotation.EnumAttribute;
 import dev.kolacek.midpoint.codegen.annotation.IgnoreAttribute;
+import dev.kolacek.midpoint.codegen.config.AnnotationDefaults;
+import dev.kolacek.midpoint.codegen.processor.MessagingService;
 import dev.kolacek.midpoint.codegen.processor.generator.util.AnnotationUtil;
 import dev.kolacek.midpoint.codegen.processor.generator.util.PoetUtil;
 import org.identityconnectors.common.security.GuardedByteArray;
@@ -28,13 +30,11 @@ import org.identityconnectors.common.security.GuardedString;
 
 import javax.annotation.Nullable;
 import javax.annotation.processing.Filer;
-import javax.annotation.processing.Messager;
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import javax.tools.Diagnostic;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -63,13 +63,13 @@ public class ConnectorObjectBuilderGenerator {
 
     private final Elements elementUtils;
     private final Filer filer;
-    private final Messager messager;
+    private final MessagingService messagingService;
     private final Types typeUtils;
 
 
-    public ConnectorObjectBuilderGenerator(Elements elementUtils, Messager messager, Types typeUtils, Filer filer) {
+    public ConnectorObjectBuilderGenerator(Elements elementUtils, MessagingService messagingService, Types typeUtils, Filer filer) {
         this.elementUtils = elementUtils;
-        this.messager = messager;
+        this.messagingService = messagingService;
         this.typeUtils = typeUtils;
         this.filer = filer;
     }
@@ -139,7 +139,7 @@ public class ConnectorObjectBuilderGenerator {
             VariableElement fieldElement = (VariableElement) element;
 
             if (!isSupportedType(fieldElement.asType())) {
-                warn(fieldElement, "Field %s of type %s is not supported", fieldElement.getSimpleName(), fieldElement.asType());
+                messagingService.warn(fieldElement, "Field %s of type %s is not supported", fieldElement.getSimpleName(), fieldElement.asType());
                 continue;
             }
 
@@ -155,7 +155,7 @@ public class ConnectorObjectBuilderGenerator {
             ExecutableElement getter = getters.get(fieldElement.getSimpleName().toString());
             if (getter == null) {
                 // TODO add the option to fail, warn or ignore
-                warn(fieldElement, "No getter found for field %s", fieldElement.getSimpleName());
+                messagingService.warn(fieldElement, "No getter found for field %s", fieldElement.getSimpleName());
                 continue;
             }
 
@@ -266,16 +266,12 @@ public class ConnectorObjectBuilderGenerator {
             isMultivalued = connectorAttribute.multivalued();
             fieldName = connectorAttribute.value();
         } else {
-            isRequired = ConnectorAttribute.DEFAULT_REQUIRED;
+            isRequired = AnnotationDefaults.ConnectorAttribute.DEFAULT_REQUIRED;
             isMultivalued = ConnectorAttribute.DEFAULT_MULTIVALUED;
             fieldName = fieldElement.getSimpleName().toString();
         }
 
         return new FieldInfo(fieldName, className, isRequired, isMultivalued, enumToString);
-    }
-
-    private void warn(Element e, String msg, Object... args) {
-        messager.printMessage(Diagnostic.Kind.WARNING, String.format(msg, args), e);
     }
 
     public record FieldInfo(String name, TypeName type, boolean required, boolean multiValued,
