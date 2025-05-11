@@ -18,6 +18,7 @@ package dev.kolacek.midpoint.codegen.processor.generator.meta;
 
 import com.palantir.javapoet.TypeName;
 
+import javax.annotation.Nullable;
 import javax.lang.model.element.ExecutableElement;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +34,12 @@ public class FieldMeta {
     private EnumMeta enumMeta;
 
     public FieldMeta() {
+    }
+
+    public FieldMeta(String name, String getterName, boolean required) {
+        this.name = name;
+        this.getterName = getterName;
+        this.required = required;
     }
 
     public FieldMeta(String name, String getterName, TypeName fieldType, boolean required, boolean multivalued, ExecutableElement getter, EnumMeta enumMeta) {
@@ -89,7 +96,7 @@ public class FieldMeta {
         return Optional.ofNullable(getter);
     }
 
-    public void setGetter(ExecutableElement getter) {
+    public void setGetter(@Nullable ExecutableElement getter) {
         this.getter = getter;
     }
 
