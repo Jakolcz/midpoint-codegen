@@ -63,7 +63,7 @@ public class MidPointModelProcessor extends AbstractProcessor {
 
             TypeElement classElement = (TypeElement) element;
             try {
-                generator.generate(classElement);
+                generator.generate(classElement);   // TODO add MissingGetterException handling
             } catch (IOException e) {
                 messagingService.error(classElement, "Failed to generate code for %s: %s", classElement.getQualifiedName(), e.getMessage());
             }
