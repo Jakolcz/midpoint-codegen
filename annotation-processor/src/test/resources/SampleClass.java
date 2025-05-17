@@ -12,10 +12,11 @@ public class SampleClass {
     private String name;
     private String description;
     private int primitiveInt;
+    private int[] primitiveIntArray;
     private Integer integerValue;
     private SampleEnum enumValue;
 //    private Integer[] intArrayValue;
-//    private List<String> listValue;
+    private List<String> listValue;
 
     public String getName() {
         return name;
@@ -39,6 +40,14 @@ public class SampleClass {
 
     public void setPrimitiveInt(int primitiveInt) {
         this.primitiveInt = primitiveInt;
+    }
+
+    public int[] getPrimitiveIntArray() {
+        return primitiveIntArray;
+    }
+
+    public void setPrimitiveIntArray(int[] primitiveIntArray) {
+        this.primitiveIntArray = primitiveIntArray;
     }
 
     public Integer getIntegerValue() {
@@ -65,13 +74,13 @@ public class SampleClass {
 //        this.intArrayValue = intArrayValue;
 //    }
 
-//    public List<String> getListValue() {
-//        return listValue;
-//    }
+    public List<String> getListValue() {
+        return listValue;
+    }
 
-//    public void setListValue(List<String> listValue) {
-//        this.listValue = listValue;
-//    }
+    public void setListValue(List<String> listValue) {
+        this.listValue = listValue;
+    }
 
     public enum SampleEnum {
         VALUE1,

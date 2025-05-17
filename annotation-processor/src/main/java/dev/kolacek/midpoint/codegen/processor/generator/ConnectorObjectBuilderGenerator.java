@@ -17,46 +17,23 @@
 package dev.kolacek.midpoint.codegen.processor.generator;
 
 import com.palantir.javapoet.*;
-import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
-import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
-import dev.kolacek.midpoint.codegen.annotation.EnumAttribute;
-import dev.kolacek.midpoint.codegen.annotation.IgnoreAttribute;
-import dev.kolacek.midpoint.codegen.config.AnnotationDefaults;
 import dev.kolacek.midpoint.codegen.processor.MessagingService;
-import dev.kolacek.midpoint.codegen.processor.generator.util.AnnotationUtil;
+import dev.kolacek.midpoint.codegen.processor.generator.meta.ClassMeta;
+import dev.kolacek.midpoint.codegen.processor.generator.meta.FieldMeta;
+import dev.kolacek.midpoint.codegen.processor.generator.meta.ObjectClassMeta;
+import dev.kolacek.midpoint.codegen.processor.generator.util.ConnectorModelPreprocessor;
 import dev.kolacek.midpoint.codegen.processor.generator.util.PoetUtil;
-import org.identityconnectors.common.security.GuardedByteArray;
-import org.identityconnectors.common.security.GuardedString;
 
-import javax.annotation.Nullable;
 import javax.annotation.processing.Filer;
-import javax.lang.model.element.*;
-import javax.lang.model.type.TypeKind;
-import javax.lang.model.type.TypeMirror;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 public class ConnectorObjectBuilderGenerator {
-
-    /**
-     * Set of supported basic classes for connector attributes.
-     */
-    private static final Set<Class<?>> SUPPORTED_BASIC_CLASSES = Set.of(String.class, long.class, Long.class, char.class,
-            Character.class, double.class, Double.class, float.class, Float.class, int.class, Integer.class, boolean.class,
-            Boolean.class, byte.class, Byte.class, byte[].class, BigDecimal.class, BigInteger.class, GuardedByteArray.class,
-            GuardedString.class, /*Map.class, ZonedDateTime.class,*/ Enum.class);
-    private static final Set<Class<?>> SUPPORTED_COLLECTION_CLASSES = Set.of(List.class, Set.class);
-
-    private static final Set<String> SUPPORTED_BASIC_CLASSES_FQN = SUPPORTED_BASIC_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
-    private static final Set<String> SUPPORTED_COLLECTION_CLASSES_FQN = SUPPORTED_COLLECTION_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
 
     public static final String PARAM_CONNECTOR_BUILDER = "data";
     public static final String BUILDER_NAME = "builder";
@@ -75,26 +52,19 @@ public class ConnectorObjectBuilderGenerator {
     }
 
     public void generate(TypeElement classElement) throws IOException {
-        String className = classElement.getSimpleName().toString();
-        ConnectorModel annotation = classElement.getAnnotation(ConnectorModel.class);
-        String generatedClassName = className + annotation.suffix();
-        String packageName;
-        if (annotation.packageName().isBlank()) {
-            packageName = elementUtils.getPackageOf(classElement).getQualifiedName().toString();
-        } else {
-            packageName = annotation.packageName();
-        }
+        ConnectorModelPreprocessor preprocessor = new ConnectorModelPreprocessor(elementUtils, typeUtils, messagingService);
+        ClassMeta classMeta = preprocessor.prepareClassMeta(classElement);
+        ObjectClassMeta objectClassMeta = classMeta.getObjectClassMeta();
 
-        System.out.println("Generating class: " + generatedClassName + " in package: " + packageName);
+        System.out.println("Generating class: " + classMeta.getClassName() + " in package: " + classMeta.getPackageName());
 
-        ClassName generatedClass = ClassName.get(packageName, generatedClassName);
+        ClassName generatedClass = ClassName.get(classMeta.getPackageName(), classMeta.getGeneratedClassName());
         ClassName definingClass = ClassName.get(classElement);
 
         // Import necessary classes from MidPoint/ConnId
         ClassName objectClassInfoBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "ObjectClassInfoBuilder");
         ClassName attributeInfoBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "AttributeInfoBuilder");
         ClassName connectorObjectBuilderClass = ClassName.get("org.identityconnectors.framework.common.objects", "ConnectorObjectBuilder");
-        ClassName objectClassClass = ClassName.get("org.identityconnectors.framework.common.objects", "ObjectClass");
 
         // Create the builder class
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(generatedClass)
@@ -102,67 +72,29 @@ public class ConnectorObjectBuilderGenerator {
 
         CodeBlock.Builder objectClassInfoBuilderMethod = CodeBlock.builder()
                 .addStatement("$T $L = new $T()", objectClassInfoBuilderClass, BUILDER_NAME, objectClassInfoBuilderClass)
-                .addStatement("$L.setType($S)", BUILDER_NAME, annotation.objectClassType());
+                .addStatement("$L.setType($L)", BUILDER_NAME, objectClassMeta.getObjectClassTypeCodeBlock());
 
         CodeBlock.Builder connectorObjectBuilderMethod = CodeBlock.builder()
                 .addStatement("$T $L = new $T()", connectorObjectBuilderClass, BUILDER_NAME, connectorObjectBuilderClass)
-                .addStatement("$L.setObjectClass(new $T($S))", BUILDER_NAME, objectClassClass, annotation.objectClassType());
-        // TODO Add handling for the default ACCOUNT, GROUP, ALL object classes
+                .addStatement("$L.setObjectClass($L)", BUILDER_NAME, objectClassMeta.getConnectorObjectBuilderObjectClassCodeBlock());
 
-        Map<String, ExecutableElement> getters = new HashMap<>();
-        for (Element element : classElement.getEnclosedElements()) {
-            if (element.getKind() != ElementKind.FIELD) {
-                continue;
-            }
-
-            if (element.getAnnotation(IgnoreAttribute.class) != null) {
-                continue;
-            }
-
-            VariableElement fieldElement = (VariableElement) element;
-            ExecutableElement getter = findGetter(fieldElement, classElement);
-            if (getter != null) {
-                getters.put(fieldElement.getSimpleName().toString(), getter);
-            }
-        }
-
-
-        for (Element element : classElement.getEnclosedElements()) {
-            if (element.getKind() != ElementKind.FIELD) {
-                continue;
-            }
-
-            if (element.getAnnotation(IgnoreAttribute.class) != null) {
-                continue;
-            }
-
-            VariableElement fieldElement = (VariableElement) element;
-
-            if (!isSupportedType(fieldElement.asType())) {
-                messagingService.warn(fieldElement, "Field %s of type %s is not supported", fieldElement.getSimpleName(), fieldElement.asType());
-                continue;
-            }
-
-            FieldInfo fieldInfo = toFieldInfo(fieldElement);
-
+        for (FieldMeta fieldMeta : classMeta.getFields()) {
             objectClassInfoBuilderMethod.addStatement("builder.addAttributeInfo(new $T().setName($S).setRequired($L).setType($T.class).setMultiValued($L).build())",
                     attributeInfoBuilderClass,
-                    fieldInfo.name(),
-                    fieldInfo.required(),
-                    fieldInfo.type(),
-                    fieldInfo.multiValued());
+                    fieldMeta.getName(),
+                    fieldMeta.isRequired(),
+                    fieldMeta.getFieldType(),
+                    fieldMeta.isMultivalued());
 
-            ExecutableElement getter = getters.get(fieldElement.getSimpleName().toString());
-            if (getter == null) {
-                // TODO add the option to fail, warn or ignore
-                messagingService.warn(fieldElement, "No getter found for field %s", fieldElement.getSimpleName());
+            Optional<ExecutableElement> getter = fieldMeta.getGetter();
+            if (getter.isEmpty()) {
                 continue;
             }
 
-            if (fieldInfo.enumToString() == null) {
-                connectorObjectBuilderMethod.add(PoetUtil.addAttributeBlock(fieldInfo, getter));
+            if (fieldMeta.getEnumMeta().isPresent()) {
+                connectorObjectBuilderMethod.add(PoetUtil.addEnumAttributeBlock(fieldMeta, getter.get()));
             } else {
-                connectorObjectBuilderMethod.add(PoetUtil.addEnumAttributeBlock(fieldInfo, getter));
+                connectorObjectBuilderMethod.add(PoetUtil.addAttributeBlock(fieldMeta, getter.get()));
             }
         }
 
@@ -177,104 +109,12 @@ public class ConnectorObjectBuilderGenerator {
 
         TypeSpec generatedType = classBuilder.build();
         // Create a JavaFile with the package and TypeSpec
-        JavaFile javaFile = JavaFile.builder(packageName, generatedType)
+        JavaFile javaFile = JavaFile.builder(classMeta.getPackageName(), generatedType)
                 .skipJavaLangImports(true)
                 .indent("    ") // 4 space indentation
                 .build();
 
         System.out.println("Output class: " + javaFile);
         javaFile.writeTo(filer);
-    }
-
-    /**
-     * Finds the getter method for a given field following Java Bean convention.
-     * Returns null if no getter is found.
-     */
-    @Nullable
-    private ExecutableElement findGetter(VariableElement fieldElement, TypeElement classElement) {
-        String fieldName = fieldElement.getSimpleName().toString();
-        String capitalizedFieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-
-        // Check if the field is boolean or not, booleans use "is" prefix
-        boolean isBoolean = fieldElement.asType().getKind() == TypeKind.BOOLEAN;
-        String getterPrefix = isBoolean ? "is" : "get";
-        String expectedGetterName = getterPrefix + capitalizedFieldName;
-
-        // Look for the getter among all methods
-        for (Element enclosedElement : classElement.getEnclosedElements()) {
-            if (enclosedElement.getKind() != ElementKind.METHOD) {
-                continue;
-            }
-
-            ExecutableElement methodElement = (ExecutableElement) enclosedElement;
-
-            // Check if method name matches and it has no parameters
-            if (methodElement.getSimpleName().toString().equals(expectedGetterName) &&
-                    methodElement.getParameters().isEmpty()) {
-                return methodElement;
-            }
-        }
-
-        return null; // No getter found
-    }
-
-    private boolean isSupportedType(TypeMirror typeMirror) {
-        TypeKind kind = typeMirror.getKind();
-        // Support all primitive types
-        if (kind.isPrimitive()) {
-            return true;
-        }
-
-        TypeElement typeElement = (TypeElement) typeUtils.asElement(typeMirror);
-        ElementKind elementKind = typeElement.getKind();
-
-        // ENUMs are supported now
-        if (elementKind == ElementKind.ENUM) {
-            return true;
-        }
-
-        String className = typeElement.getQualifiedName().toString();
-
-        return SUPPORTED_BASIC_CLASSES_FQN.contains(className) || SUPPORTED_COLLECTION_CLASSES_FQN.contains(className);
-    }
-
-    private FieldInfo toFieldInfo(VariableElement fieldElement) {
-        TypeMirror fieldType = fieldElement.asType();
-        ConnectorAttribute connectorAttribute = fieldElement.getAnnotation(ConnectorAttribute.class);
-        TypeName className;
-        String enumToString = null;
-
-        if (fieldType.getKind().isPrimitive()) {
-            className = ClassName.get(fieldType);
-        } else {
-            TypeElement typeElement = (TypeElement) typeUtils.asElement(fieldType);
-            ElementKind elementKind = typeElement.getKind();
-            if (elementKind == ElementKind.ENUM) {
-                className = ClassName.get(String.class);
-                enumToString = AnnotationUtil.getEnumToString(fieldElement.getAnnotation(EnumAttribute.class));
-            } else {
-                className = ClassName.get(fieldType);
-            }
-        }
-
-        boolean isRequired;
-        boolean isMultivalued;
-        String fieldName;
-
-        if (connectorAttribute != null) {
-            isRequired = connectorAttribute.required();
-            isMultivalued = connectorAttribute.multivalued();
-            fieldName = connectorAttribute.value();
-        } else {
-            isRequired = AnnotationDefaults.ConnectorAttribute.DEFAULT_REQUIRED;
-            isMultivalued = ConnectorAttribute.DEFAULT_MULTIVALUED;
-            fieldName = fieldElement.getSimpleName().toString();
-        }
-
-        return new FieldInfo(fieldName, className, isRequired, isMultivalued, enumToString);
-    }
-
-    public record FieldInfo(String name, TypeName type, boolean required, boolean multiValued,
-                            @Nullable String enumToString) {
     }
 }
