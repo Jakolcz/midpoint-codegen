@@ -55,8 +55,16 @@ public class ObjectClassMeta {
         this.fromConnId = fromConnId;
     }
 
-    public String getObjectClassName() {
-        return objectClassName;
+    public CodeBlock getObjectClassTypeCodeBlock() {
+        CodeBlock.Builder builder = CodeBlock.builder();
+
+        if (fromConnId) {
+            builder.add("$T.$L_NAME", ObjectClass.class, objectClassName);
+        } else {
+            builder.add("$S", objectClassName);
+        }
+
+        return builder.build();
     }
 
     public void setObjectClassName(String objectClassName) {
@@ -68,13 +76,13 @@ public class ObjectClassMeta {
      *
      * @return a CodeBlock to set the ObjectClass in the ConnectorObjectBuilder
      */
-    public CodeBlock getObjectClassCodeBlock() {
+    public CodeBlock getConnectorObjectBuilderObjectClassCodeBlock() {
         CodeBlock.Builder builder = CodeBlock.builder();
 
         if (fromConnId) {
-            builder.addStatement("$T.$L", ObjectClass.class, objectClassName);
+            builder.add("$T.$L", ObjectClass.class, objectClassName);
         } else {
-            builder.addStatement("new $T($S)", ObjectClass.class, objectClassName);
+            builder.add("new $T($S)", ObjectClass.class, objectClassName);
         }
 
         return builder.build();
