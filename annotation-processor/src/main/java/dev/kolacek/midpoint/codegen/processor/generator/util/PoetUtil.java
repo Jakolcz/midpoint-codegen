@@ -21,6 +21,7 @@ import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.ParameterSpec;
 import dev.kolacek.midpoint.codegen.processor.generator.ConnectorObjectBuilderGenerator;
+import dev.kolacek.midpoint.codegen.processor.generator.meta.FieldMeta;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
@@ -29,24 +30,24 @@ public final class PoetUtil {
     private PoetUtil() {
     }
 
-    public static CodeBlock addEnumAttributeBlock(ConnectorObjectBuilderGenerator.FieldInfo fieldInfo, ExecutableElement getter) {
+    public static CodeBlock addEnumAttributeBlock(FieldMeta fieldMeta, ExecutableElement getter) {
         return CodeBlock.builder()
                 .beginControlFlow("if ($L.$L() != null)", ConnectorObjectBuilderGenerator.PARAM_CONNECTOR_BUILDER, getter.getSimpleName())
                 .addStatement("$L.addAttribute($S, $L.$L().$L())",
                         ConnectorObjectBuilderGenerator.BUILDER_NAME,
-                        fieldInfo.name(),
+                        fieldMeta.getName(),
                         ConnectorObjectBuilderGenerator.PARAM_CONNECTOR_BUILDER,
                         getter.getSimpleName(),
-                        fieldInfo.enumToString())
+                        fieldMeta.getEnumMeta().get().getToStringMethod())
                 .endControlFlow()
                 .build();
     }
 
-    public static CodeBlock addAttributeBlock(ConnectorObjectBuilderGenerator.FieldInfo fieldInfo, ExecutableElement getter) {
+    public static CodeBlock addAttributeBlock(FieldMeta fieldMeta, ExecutableElement getter) {
         return CodeBlock.builder()
                 .addStatement("$L.addAttribute($S, $L.$L())",
                         ConnectorObjectBuilderGenerator.BUILDER_NAME,
-                        fieldInfo.name(),
+                        fieldMeta.getName(),
                         ConnectorObjectBuilderGenerator.PARAM_CONNECTOR_BUILDER,
                         getter.getSimpleName())
                 .build();
