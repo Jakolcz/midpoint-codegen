@@ -76,7 +76,10 @@ public class ConnectorObjectBuilderGenerator {
 
         CodeBlock.Builder connectorObjectBuilderMethod = CodeBlock.builder()
                 .addStatement("$T $L = new $T()", connectorObjectBuilderClass, BUILDER_NAME, connectorObjectBuilderClass)
-                .addStatement("$L.setObjectClass($L)", BUILDER_NAME, objectClassMeta.getConnectorObjectBuilderObjectClassCodeBlock());
+                .addStatement("$L.setObjectClass($L)", BUILDER_NAME, objectClassMeta.getConnectorObjectBuilderObjectClassCodeBlock())
+                .beginControlFlow("if ($L == null)", PARAM_CONNECTOR_BUILDER)
+                .addStatement("return $L", BUILDER_NAME)
+                .endControlFlow();
 
         for (FieldMeta fieldMeta : classMeta.getFields()) {
             objectClassInfoBuilderMethod.addStatement("builder.addAttributeInfo(new $T().setName($S).setRequired($L).setType($T.class).setMultiValued($L).build())",
