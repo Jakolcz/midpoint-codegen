@@ -32,6 +32,8 @@ public class FieldMeta {
     private boolean multivalued;
     private ExecutableElement getter;
     private EnumMeta enumMeta;
+    private boolean uidField;
+    private boolean nameField;
 
     public FieldMeta() {
     }
@@ -40,16 +42,6 @@ public class FieldMeta {
         this.name = name;
         this.getterName = getterName;
         this.required = required;
-    }
-
-    public FieldMeta(String name, String getterName, TypeName fieldType, boolean required, boolean multivalued, ExecutableElement getter, EnumMeta enumMeta) {
-        this.name = name;
-        this.getterName = getterName;
-        this.fieldType = fieldType;
-        this.required = required;
-        this.multivalued = multivalued;
-        this.getter = getter;
-        this.enumMeta = enumMeta;
     }
 
     public String getName() {
@@ -108,15 +100,33 @@ public class FieldMeta {
         this.enumMeta = enumMeta;
     }
 
+    public boolean isUidField() {
+        return uidField;
+    }
+
+    public void setUidField(boolean uidField) {
+        this.uidField = uidField;
+    }
+
+    public boolean isNameField() {
+        return nameField;
+    }
+
+    public void setNameField(boolean nameField) {
+        this.nameField = nameField;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof FieldMeta fieldMeta)) return false;
-        return required == fieldMeta.required && multivalued == fieldMeta.multivalued && Objects.equals(name, fieldMeta.name) && Objects.equals(getterName, fieldMeta.getterName) && Objects.equals(fieldType, fieldMeta.fieldType) && Objects.equals(getter, fieldMeta.getter) && Objects.equals(enumMeta, fieldMeta.enumMeta);
+        return required == fieldMeta.required && multivalued == fieldMeta.multivalued && Objects.equals(name, fieldMeta.name) && Objects.equals(getterName, fieldMeta.getterName)
+                && Objects.equals(fieldType, fieldMeta.fieldType) && Objects.equals(getter, fieldMeta.getter) && Objects.equals(enumMeta, fieldMeta.enumMeta)
+                && Objects.equals(uidField, fieldMeta.uidField) && Objects.equals(nameField, fieldMeta.nameField);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, getterName, fieldType, required, multivalued, getter, enumMeta);
+        return Objects.hash(name, getterName, fieldType, required, multivalued, getter, enumMeta, uidField, nameField);
     }
 
     @Override
@@ -129,6 +139,8 @@ public class FieldMeta {
                 ", multivalued=" + multivalued +
                 ", getter=" + getter +
                 ", enumMeta=" + enumMeta +
+                ", uidField=" + uidField +
+                ", nameField=" + nameField +
                 '}';
     }
 }

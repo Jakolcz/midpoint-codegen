@@ -17,10 +17,7 @@
 package dev.kolacek.midpoint.codegen.processor.generator.util;
 
 import com.palantir.javapoet.TypeName;
-import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
-import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
-import dev.kolacek.midpoint.codegen.annotation.EnumAttribute;
-import dev.kolacek.midpoint.codegen.annotation.IgnoreAttribute;
+import dev.kolacek.midpoint.codegen.annotation.*;
 import dev.kolacek.midpoint.codegen.config.AnnotationDefaults;
 import dev.kolacek.midpoint.codegen.config.ReportingPolicy;
 import dev.kolacek.midpoint.codegen.processor.MessagingService;
@@ -82,7 +79,11 @@ public class ConnectorModelPreprocessor {
     public ClassMeta prepareClassMeta(TypeElement classElement) {
         // This is the annotation we can be sure is present
         ClassMeta classMeta = fromClassElement(classElement);
-        classMeta.setFields(prepareFieldMetas(classElement));
+
+        List<FieldMeta> fieldMetas = prepareFieldMetas(classElement);
+
+        validateUidAndNameFields(fieldMetas, classElement);
+        classMeta.setFields(fieldMetas);
 
         return classMeta;
     }
@@ -125,6 +126,8 @@ public class ConnectorModelPreprocessor {
 
         // type, multival a enumek
         handleTypeInfo(fieldMeta, fieldElement);
+        fieldMeta.setUidField(fieldElement.getAnnotation(UidField.class) != null);
+        fieldMeta.setNameField(fieldElement.getAnnotation(NameField.class) != null);
 
         return fieldMeta;
     }
@@ -191,6 +194,19 @@ public class ConnectorModelPreprocessor {
         }
 
         return null;
+    }
+
+    private void validateUidAndNameFields(List<FieldMeta> fieldMetas, TypeElement classElement) {
+        long uidCount = fieldMetas.stream().filter(FieldMeta::isUidField).count();
+        long nameCount = fieldMetas.stream().filter(FieldMeta::isNameField).count();
+
+        if (uidCount != 1) {
+            messagingService.error(classElement, "Each connector model must have exactly one field annotated with @UidField, found %d", uidCount);
+        }
+
+        if (nameCount != 1) {
+            messagingService.error(classElement, "Each connector model must have exactly one field annotated with @NameField, found %d", nameCount);
+        }
     }
 
     /**

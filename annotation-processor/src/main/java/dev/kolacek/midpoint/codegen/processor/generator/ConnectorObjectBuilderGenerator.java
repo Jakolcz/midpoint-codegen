@@ -81,6 +81,13 @@ public class ConnectorObjectBuilderGenerator {
                 .addStatement("return $L", BUILDER_NAME)
                 .endControlFlow();
 
+        connectorObjectBuilderMethod.addStatement("$L.setUid($L.$L).setName($L.$L)",
+                BUILDER_NAME,
+                PARAM_CONNECTOR_BUILDER,
+                findUidField(classMeta).getGetter().get(),
+                PARAM_CONNECTOR_BUILDER,
+                findNameField(classMeta).getGetter().get());
+
         for (FieldMeta fieldMeta : classMeta.getFields()) {
             objectClassInfoBuilderMethod.addStatement("builder.addAttributeInfo(new $T().setName($S).setRequired($L).setType($T.class).setMultiValued($L).build())",
                     attributeInfoBuilderClass,
@@ -119,5 +126,21 @@ public class ConnectorObjectBuilderGenerator {
 
         System.out.println("Output class: " + javaFile);
         javaFile.writeTo(filer);
+    }
+
+    private FieldMeta findUidField(ClassMeta classMeta) {
+        return classMeta.getFields().stream()
+                .filter(FieldMeta::isUidField)
+                .findFirst()
+                // TODO replace with a more specific exception
+                .orElseThrow(() -> new IllegalStateException("No UID field found"));
+    }
+
+    private FieldMeta findNameField(ClassMeta classMeta) {
+        return classMeta.getFields().stream()
+                .filter(FieldMeta::isNameField)
+                .findFirst()
+                // TODO replace with a more specific exception
+                .orElseThrow(() -> new IllegalStateException("No Name field found"));
     }
 }

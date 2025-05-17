@@ -2,12 +2,16 @@ package dev.kolacek.generator.test;
 
 import dev.kolacek.midpoint.codegen.annotation.ConnectorAttribute;
 import dev.kolacek.midpoint.codegen.annotation.ConnectorModel;
+import dev.kolacek.midpoint.codegen.annotation.NameField;
+import dev.kolacek.midpoint.codegen.annotation.UidField;
 
 import java.util.List;
 
 @ConnectorModel
 public class SampleClass {
 
+    @UidField
+    @NameField
     @ConnectorAttribute(value = "annotationName", required = true)
     private String name;
     private String description;
