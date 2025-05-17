@@ -30,8 +30,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface ConnectorAttribute {
 
-    boolean DEFAULT_MULTIVALUED = false;
-
     /**
      * The name of the attribute, if empty, name of the field is used.
      *
@@ -40,9 +38,6 @@ public @interface ConnectorAttribute {
     String value() default "";
 
     boolean required() default AnnotationDefaults.ConnectorAttribute.DEFAULT_REQUIRED;
-
-    @Deprecated(forRemoval = true)
-    boolean multivalued() default DEFAULT_MULTIVALUED;
 
     /**
      * The name of the getter method for this attribute. If not specified, the default getter name will be used, following the JavaBean naming conventions.
