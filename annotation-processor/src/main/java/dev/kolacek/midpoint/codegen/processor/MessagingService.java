@@ -16,6 +16,7 @@
 
 package dev.kolacek.midpoint.codegen.processor;
 
+import javax.annotation.Nullable;
 import javax.annotation.processing.Messager;
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic;
@@ -28,19 +29,19 @@ public class MessagingService {
         this.messager = messager;
     }
 
-    public void error(Element e, String msg, Object... args) {
+    public void error(@Nullable Element e, String msg, Object... args) {
         this.log(Diagnostic.Kind.ERROR, e, msg, args);
     }
 
-    public void warn(Element e, String msg, Object... args) {
+    public void warn(@Nullable Element e, String msg, Object... args) {
         this.log(Diagnostic.Kind.WARNING, e, msg, args);
     }
 
-    public void note(Element e, String msg, Object... args) {
+    public void note(@Nullable Element e, String msg, Object... args) {
         this.log(Diagnostic.Kind.NOTE, e, msg, args);
     }
 
-    public void log(Diagnostic.Kind kind, Element e, String msg, Object... args) {
+    public void log(Diagnostic.Kind kind, @Nullable Element e, String msg, Object... args) {
         messager.printMessage(kind, String.format(msg, args), e);
     }
 }
