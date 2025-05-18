@@ -27,6 +27,43 @@ To use this project, you need the following:
 ---
 
 ## Installation
+To install the project, you can either add it as a dependency in your Maven project or clone the repository and build it from source.
+
+### Adding the Dependency
+To add the `midpoint-codegen` dependency to your Maven project, include the following in your `pom.xml` as a dependency.
+It contains the required annotations and utility classes for code generation.
+
+```xml
+<dependency>
+    <groupId>dev.kolacek.midpoint.codegen</groupId>
+    <artifactId>codegen-core</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+
+Then, add the annotation processor to your `pom.xml` as a plugin.
+
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <annotationProcessorPaths>
+                    <path>
+                        <groupId>dev.kolacek.midpoint.codegen</groupId>
+                        <artifactId>annotation-processor</artifactId>
+                        <version>0.1.0</version>
+                    </path>
+                </annotationProcessorPaths>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+```
+
+### Building from Source
 Clone the repository and build the project using Maven.
 
 ```bash
@@ -40,11 +77,18 @@ mvn clean install
 ## Usage
 ### Adding the CodeGen to Your Project
 To use the tool in your own project:
-1. Annotate your connector classes with `@ConnectorModel` to specify the connector structure.
-2. Configure the Maven plugin to include the code generation process.
+1. Add the `midpoint-codegen` dependencies to your `pom.xml`
+2. Annotate your connector classes with `@ConnectorModel` to specify the connector structure.
+3. Configure the Maven plugin to include the code generation process.
 
 Sample `pom.xml` configuration:
 ```xml
+<depdendency>
+    <groupId>dev.kolacek.midpoint.codegen</groupId>
+    <artifactId>codegen-core</artifactId>
+    <version>0.1.0</version>
+</depdendency>
+...
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-compiler-plugin</artifactId>
@@ -53,7 +97,7 @@ Sample `pom.xml` configuration:
             <path>
                 <groupId>dev.kolacek.midpoint.codegen</groupId>
                 <artifactId>annotation-processor</artifactId>
-                <version>0.1.0-SNAPSHOT</version>
+                <version>0.1.0</version>
             </path>
         </annotationProcessorPaths>
     </configuration>
