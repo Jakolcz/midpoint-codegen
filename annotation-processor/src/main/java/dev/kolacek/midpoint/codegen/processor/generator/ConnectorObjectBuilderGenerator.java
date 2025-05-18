@@ -92,6 +92,10 @@ public class ConnectorObjectBuilderGenerator {
                 findNameField(classMeta));
 
         for (FieldMeta fieldMeta : classMeta.getFields()) {
+            if (!fieldMeta.isSupported()) {
+                // Skip unsupported fields, error handling based on unsupportedTypePolicy is done in the preprocessor
+                continue;
+            }
             objectClassInfoBuilderMethod.addStatement("builder.addAttributeInfo(new $T().setName($S).setRequired($L).setType($T.class).setMultiValued($L).build())",
                     attributeInfoBuilderClass,
                     fieldMeta.getName(),

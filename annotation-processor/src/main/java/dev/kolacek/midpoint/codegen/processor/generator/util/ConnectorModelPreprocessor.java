@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ConnectorModelPreprocessor {
 
@@ -60,6 +61,8 @@ public class ConnectorModelPreprocessor {
 
     private static final Set<String> SUPPORTED_BASIC_CLASSES_FQN = SUPPORTED_BASIC_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
     private static final Set<String> SUPPORTED_COLLECTION_CLASSES_FQN = SUPPORTED_COLLECTION_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
+
+    private static final Set<String> SUPPORTED_ALL_CLASSES_FQN = Stream.concat(SUPPORTED_BASIC_CLASSES_FQN.stream(), SUPPORTED_COLLECTION_CLASSES_FQN.stream()).collect(Collectors.toSet());
 
     private static final Map<String, ObjectClassMeta> OBJECT_CLASS_MAP = Map.of(
             ObjectClass.ACCOUNT_NAME, ObjectClassMeta.ACCOUNT,
@@ -90,7 +93,7 @@ public class ConnectorModelPreprocessor {
     }
 
     public List<FieldMeta> prepareFieldMetas(TypeElement classElement) {
-        ReportingPolicy reportingPolicy = classElement.getAnnotation(ConnectorModel.class).missingGetterPolicy();
+        ConnectorModel annotation = classElement.getAnnotation(ConnectorModel.class);
         List<FieldMeta> fieldMetas = new LinkedList<>();
 
         for (Element element : classElement.getEnclosedElements()) {
@@ -103,21 +106,22 @@ public class ConnectorModelPreprocessor {
             }
 
             VariableElement fieldElement = (VariableElement) element;
-            FieldMeta fieldMeta = prepareFieldMeta(fieldElement, reportingPolicy);
+            FieldMeta fieldMeta = prepareFieldMeta(fieldElement, annotation);
             fieldMetas.add(fieldMeta);
         }
 
         return fieldMetas;
     }
 
-    public FieldMeta prepareFieldMeta(VariableElement fieldElement, ReportingPolicy reportingPolicy) {
+    public FieldMeta prepareFieldMeta(VariableElement fieldElement, ConnectorModel annotation) {
         FieldMeta fieldMeta = basicFieldMetaFromAnnotation(fieldElement);
         ExecutableElement getterElement = findGetter(fieldMeta.getGetterName(), fieldElement);
+        ReportingPolicy missingGetterPolicy = annotation.missingGetterPolicy();
 
         if (getterElement == null) {
-            if (reportingPolicy == ReportingPolicy.ERROR) {
+            if (missingGetterPolicy == ReportingPolicy.ERROR) {
                 throw new MissingGetterException(fieldElement, fieldMeta.getGetterName());
-            } else if (reportingPolicy == ReportingPolicy.WARNING) {
+            } else if (missingGetterPolicy == ReportingPolicy.WARNING) {
                 // Log a warning
                 messagingService.warn(fieldElement, "Missing getter method for field '%s'. Expected getter name: '%s'.", fieldMeta.getName(), fieldMeta.getGetterName());
             }
@@ -125,8 +129,7 @@ public class ConnectorModelPreprocessor {
             fieldMeta.setGetter(getterElement);
         }
 
-        // type, multival a enumek
-        handleTypeInfo(fieldMeta, fieldElement);
+        handleTypeInfo(fieldMeta, fieldElement, annotation.unsupportedTypePolicy());
         fieldMeta.setUidField(fieldElement.getAnnotation(UidField.class) != null);
         fieldMeta.setNameField(fieldElement.getAnnotation(NameField.class) != null);
 
@@ -134,46 +137,73 @@ public class ConnectorModelPreprocessor {
     }
 
 
-    private void handleTypeInfo(FieldMeta fieldMeta, VariableElement fieldElement) {
+    private void handleTypeInfo(FieldMeta fieldMeta, VariableElement fieldElement, ReportingPolicy unsupportedTypePolicy) {
         TypeMirror fieldType = fieldElement.asType();
         TypeKind fieldTypeKind = fieldType.getKind();
+        TypeName typeName;
+        boolean multivalued = false;
 
         if (fieldTypeKind.isPrimitive()) {
             // primitive needs special handling
-            fieldMeta.setMultivalued(false);
-            fieldMeta.setFieldType(TypeName.get(fieldType));
+            typeName = TypeName.get(fieldType);
         } else if (fieldTypeKind == TypeKind.ARRAY) {
             // get the original type
             TypeMirror componentType = ((ArrayType) fieldType).getComponentType();
-            fieldMeta.setMultivalued(true);
-            fieldMeta.setFieldType(TypeName.get(componentType));
+            multivalued = true;
+            typeName = TypeName.get(componentType);
         } else {
             TypeElement typeElement = (TypeElement) typeUtils.asElement(fieldType);
             ElementKind elementKind = typeElement.getKind();
             if (elementKind == ElementKind.ENUM) {
-                fieldMeta.setFieldType(TypeName.get(String.class));
-                fieldMeta.setMultivalued(false);
+                typeName = TypeName.get(String.class);
                 fieldMeta.setEnumMeta(new EnumMeta(AnnotationUtil.getEnumToString(fieldElement.getAnnotation(EnumAttribute.class))));
             } else if (SUPPORTED_COLLECTION_CLASSES_FQN.contains(typeElement.getQualifiedName().toString())) {
-                fieldMeta.setMultivalued(true);
+                multivalued = true;
 
                 if (fieldType instanceof DeclaredType declaredType) {
                     List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
                     if (!typeArguments.isEmpty()) {
                         // Use the first type argument
                         TypeMirror elementType = typeArguments.get(0);
-                        fieldMeta.setFieldType(TypeName.get(elementType));
+                        typeName = TypeName.get(elementType);
                     } else {
                         // TODO needs better handling, probably conversion to String?
-                        fieldMeta.setFieldType(TypeName.get(Object.class));
+                        typeName = TypeName.get(Object.class);
                     }
                 } else {
                     // Fallback
-                    fieldMeta.setFieldType(TypeName.get(Object.class));
+                    typeName = TypeName.get(Object.class);
                 }
             } else {
-                fieldMeta.setFieldType(TypeName.get(fieldType));
+                typeName = TypeName.get(fieldType);
             }
+        }
+
+        boolean isSupported = isSupported(typeName);
+        if (!isSupported) {
+            reportUnsupported(typeName, fieldElement, unsupportedTypePolicy);
+        }
+
+        fieldMeta.setMultivalued(multivalued);
+        fieldMeta.setSupported(isSupported);
+        fieldMeta.setFieldType(typeName);
+    }
+
+    private boolean isSupported(TypeName typeName) {
+        String className = typeName.toString();
+        return SUPPORTED_ALL_CLASSES_FQN.contains(className);
+    }
+
+    private void reportUnsupported(TypeName typeName, VariableElement element, ReportingPolicy reportingPolicy) {
+        if (ReportingPolicy.IGNORE == reportingPolicy) {
+            // No action needed
+            return;
+        }
+
+        if (reportingPolicy == ReportingPolicy.ERROR) {
+            messagingService.error(element, "Unsupported type '%s' for connector attribute. Supported types are: %s", typeName, SUPPORTED_ALL_CLASSES_FQN);
+        } else if (reportingPolicy == ReportingPolicy.WARNING) {
+            messagingService.warn(element, "Unsupported type '%s' for connector attribute. Supported types are: %s", typeName, SUPPORTED_ALL_CLASSES_FQN);
         }
     }
 

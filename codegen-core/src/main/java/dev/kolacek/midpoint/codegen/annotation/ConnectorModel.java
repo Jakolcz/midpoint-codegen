@@ -73,4 +73,11 @@ public @interface ConnectorModel {
      * @return The policy that will be used for missing getters.
      */
     ReportingPolicy missingGetterPolicy() default ReportingPolicy.WARNING;
+
+    /**
+     * The policy that will be used for unsupported types, default is {@link ReportingPolicy#WARNING}.
+     *
+     * @return The policy that will be used for unsupported types.
+     */
+    ReportingPolicy unsupportedTypePolicy() default ReportingPolicy.WARNING;
 }

@@ -34,6 +34,7 @@ public class FieldMeta {
     private EnumMeta enumMeta;
     private boolean uidField;
     private boolean nameField;
+    private boolean supported;
 
     public FieldMeta() {
     }
@@ -116,17 +117,25 @@ public class FieldMeta {
         this.nameField = nameField;
     }
 
+    public boolean isSupported() {
+        return supported;
+    }
+
+    public void setSupported(boolean supported) {
+        this.supported = supported;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof FieldMeta fieldMeta)) return false;
         return required == fieldMeta.required && multivalued == fieldMeta.multivalued && Objects.equals(name, fieldMeta.name) && Objects.equals(getterName, fieldMeta.getterName)
                 && Objects.equals(fieldType, fieldMeta.fieldType) && Objects.equals(getter, fieldMeta.getter) && Objects.equals(enumMeta, fieldMeta.enumMeta)
-                && Objects.equals(uidField, fieldMeta.uidField) && Objects.equals(nameField, fieldMeta.nameField);
+                && Objects.equals(uidField, fieldMeta.uidField) && Objects.equals(nameField, fieldMeta.nameField) && Objects.equals(supported, fieldMeta.supported);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, getterName, fieldType, required, multivalued, getter, enumMeta, uidField, nameField);
+        return Objects.hash(name, getterName, fieldType, required, multivalued, getter, enumMeta, uidField, nameField, supported);
     }
 
     @Override
@@ -141,6 +150,7 @@ public class FieldMeta {
                 ", enumMeta=" + enumMeta +
                 ", uidField=" + uidField +
                 ", nameField=" + nameField +
+                ", unsupported=" + supported +
                 '}';
     }
 }
