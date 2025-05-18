@@ -23,6 +23,12 @@ public class MissingGetterException extends RuntimeException {
     private final Element element;
     private final String expectedGetterName;
 
+    public MissingGetterException(String message) {
+        super(message);
+        this.element = null;
+        this.expectedGetterName = null;
+    }
+
     public MissingGetterException(Element element, String expectedGetterName) {
         super("Missing getter " + expectedGetterName + " for element " + element);
         this.element = element;

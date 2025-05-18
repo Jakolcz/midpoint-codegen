@@ -18,6 +18,8 @@ package dev.kolacek.midpoint.codegen.processor.generator;
 
 import com.palantir.javapoet.*;
 import dev.kolacek.midpoint.codegen.processor.MessagingService;
+import dev.kolacek.midpoint.codegen.processor.generator.exception.MissingGetterException;
+import dev.kolacek.midpoint.codegen.processor.generator.exception.MissingIdentifierFieldException;
 import dev.kolacek.midpoint.codegen.processor.generator.meta.ClassMeta;
 import dev.kolacek.midpoint.codegen.processor.generator.meta.FieldMeta;
 import dev.kolacek.midpoint.codegen.processor.generator.meta.ObjectClassMeta;
@@ -32,6 +34,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public class ConnectorObjectBuilderGenerator {
 
@@ -84,9 +87,9 @@ public class ConnectorObjectBuilderGenerator {
         connectorObjectBuilderMethod.addStatement("$L.setUid($L.$L).setName($L.$L)",
                 BUILDER_NAME,
                 PARAM_CONNECTOR_BUILDER,
-                findUidField(classMeta).getGetter().get(),
+                findUidField(classMeta),
                 PARAM_CONNECTOR_BUILDER,
-                findNameField(classMeta).getGetter().get());
+                findNameField(classMeta));
 
         for (FieldMeta fieldMeta : classMeta.getFields()) {
             objectClassInfoBuilderMethod.addStatement("builder.addAttributeInfo(new $T().setName($S).setRequired($L).setType($T.class).setMultiValued($L).build())",
@@ -128,19 +131,20 @@ public class ConnectorObjectBuilderGenerator {
         javaFile.writeTo(filer);
     }
 
-    private FieldMeta findUidField(ClassMeta classMeta) {
-        return classMeta.getFields().stream()
-                .filter(FieldMeta::isUidField)
-                .findFirst()
-                // TODO replace with a more specific exception
-                .orElseThrow(() -> new IllegalStateException("No UID field found"));
+    private ExecutableElement findUidField(ClassMeta classMeta) {
+        return findIdentifierGetter(classMeta, FieldMeta::isUidField, "Uid");
     }
 
-    private FieldMeta findNameField(ClassMeta classMeta) {
+    private ExecutableElement findNameField(ClassMeta classMeta) {
+        return findIdentifierGetter(classMeta, FieldMeta::isNameField, "Name");
+    }
+
+    private ExecutableElement findIdentifierGetter(ClassMeta classMeta, Predicate<FieldMeta> filter, String fieldName) {
         return classMeta.getFields().stream()
-                .filter(FieldMeta::isNameField)
+                .filter(filter)
                 .findFirst()
-                // TODO replace with a more specific exception
-                .orElseThrow(() -> new IllegalStateException("No Name field found"));
+                .orElseThrow(() -> new MissingIdentifierFieldException(fieldName))
+                .getGetter()
+                .orElseThrow(() -> new MissingGetterException("No getter found for field: " + fieldName));
     }
 }
