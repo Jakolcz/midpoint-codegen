@@ -53,6 +53,17 @@ jobs:
         run: |
           mvn -B clean deploy -P release -Dgpg.passphrase=${GPG_PASSPHRASE} --settings .github/maven-settings.xml
 
+      - name: Configure Git identity
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Create and push Git tag
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          git tag -a "v$VERSION" -m "Release version $VERSION"
+          git push origin "v$VERSION"
+
       - name: Bump to next snapshot
         run: |
           RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -62,8 +73,6 @@ jobs:
 
       - name: Commit new snapshot version
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
-          git commit -m "Prepare next development iteration"
+          git commit -m "Prepare next development iteration [skip ci]"
           git push
