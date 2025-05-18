@@ -19,6 +19,9 @@ package dev.kolacek.midpoint.codegen.util;
 import org.identityconnectors.framework.common.objects.AttributeInfo;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
 
+/**
+ * Utility class for creating {@link AttributeInfo} objects.
+ */
 public final class ObjectClassInfoBuilderUtil {
 
     /**
