@@ -1,5 +1,8 @@
 name: Release to Maven Central
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
 
@@ -34,7 +37,7 @@ jobs:
         run: |
           mvn -B versions:set -DremoveSnapshot
           mvn -B versions:commit
-          
+
       - name: Import GPG key
         run: |
           echo "$GPG_PRIVATE_KEY" | gpg --batch --import
