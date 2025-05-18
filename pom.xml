@@ -107,6 +107,32 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.11.2</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                 </plugins>
             </build>
             <distributionManagement>
@@ -121,5 +147,32 @@
             </distributionManagement>
         </profile>
     </profiles>
+
+    <name>midpoint-codegen</name>
+    <description>Maven code generation tool for MidPoint/ConnID connectors</description>
+    <url>https://github.com/Jakolcz/midpoint-codegen</url>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/Jakolcz/midpoint-codegen</url>
+        <connection>scm:git:git://github.com/Jakolcz/midpoint-codegen.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:Jakolcz/midpoint-codegen.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>jakolcz</id>
+            <name>Jakub Koláček</name>
+            <url>https://github.com/Jakolcz</url>
+        </developer>
+    </developers>
 
 </project>
