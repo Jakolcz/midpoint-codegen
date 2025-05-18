@@ -40,6 +40,11 @@ public @interface ConnectorModel {
 
     /**
      * The ObjectClass type of the connector object, default is {@code __ACCOUNT__}, which is {@link org.identityconnectors.framework.common.objects.ObjectClass#ACCOUNT_NAME}.
+     * <p>
+     * If you want to use one of the default ObjectClass types (ACCOUNT, GROUP, ALL), the value must follow the format used in
+     * {@link org.identityconnectors.framework.common.objects.ObjectClassUtil#createSpecialName(String)}, meaning that it must be in uppercase and
+     * must start and end with {@code __}.
+     * </p>
      *
      * @return The name of the object class.
      * @see org.identityconnectors.framework.common.objects.ObjectClass
