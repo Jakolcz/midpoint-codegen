@@ -140,6 +140,7 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>ossrh</publishingServerId>
+                            <waitUntil>uploaded</waitUntil>
                         </configuration>
                     </plugin>
                 </plugins>
