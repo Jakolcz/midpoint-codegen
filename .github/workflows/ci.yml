@@ -41,3 +41,10 @@ jobs:
           files: '**/target/site/jacoco/jacoco.xml'
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          files: '**/target/surefire-reports/TEST-*.xml'
+          token: ${{ secrets.CODECOV_TOKEN }}
