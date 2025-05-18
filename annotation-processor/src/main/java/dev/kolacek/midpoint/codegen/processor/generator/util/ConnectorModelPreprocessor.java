@@ -40,6 +40,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,7 @@ public class ConnectorModelPreprocessor {
     private static final Set<Class<?>> SUPPORTED_BASIC_CLASSES = Set.of(String.class, long.class, Long.class, char.class,
             Character.class, double.class, Double.class, float.class, Float.class, int.class, Integer.class, boolean.class,
             Boolean.class, byte.class, Byte.class, byte[].class, BigDecimal.class, BigInteger.class, GuardedByteArray.class,
-            GuardedString.class, /*Map.class, ZonedDateTime.class,*/ Enum.class);
+            GuardedString.class, /*Map.class,*/ ZonedDateTime.class, Enum.class);
     private static final Set<Class<?>> SUPPORTED_COLLECTION_CLASSES = Set.of(List.class, Set.class);
 
     private static final Set<String> SUPPORTED_BASIC_CLASSES_FQN = SUPPORTED_BASIC_CLASSES.stream().map(Class::getCanonicalName).collect(Collectors.toSet());
